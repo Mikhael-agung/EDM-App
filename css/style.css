@@ -1,0 +1,271 @@
+:root {
+  --bg: #f4f5f7;
+  --card: #fff;
+  --tx: #1d2330;
+  --mut: #6b7385;
+  --pri: #1f6feb;
+  --bd: #dfe3ea;
+  --ok: #1a7f37;
+  --warn: #b35900;
+  --dng: #cf222e;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1319;
+    --card: #181e27;
+    --tx: #e6eaf2;
+    --mut: #8b94a7;
+    --bd: #2a3340;
+    --pri: #4c8dff;
+    --ok: #3fb950;
+    --warn: #e3a008;
+    --dng: #f85149;
+  }
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font:
+    14px/1.45 system-ui,
+    sans-serif;
+  background: var(--bg);
+  color: var(--tx);
+}
+.wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 12px;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+h1 {
+  font-size: 18px;
+  margin: 0;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--bd);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+label {
+  display: block;
+  font-size: 12px;
+  color: var(--mut);
+  margin-bottom: 3px;
+}
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--bd);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--tx);
+  font: inherit;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+.row {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+}
+button {
+  padding: 8px 12px;
+  border: 1px solid var(--bd);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--tx);
+  cursor: pointer;
+  font: inherit;
+}
+button.p {
+  background: var(--pri);
+  border-color: var(--pri);
+  color: #fff;
+}
+button.d {
+  color: var(--dng);
+}
+button.s {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.tw {
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+th,
+td {
+  padding: 8px;
+  border-bottom: 1px solid var(--bd);
+  text-align: left;
+  white-space: nowrap;
+}
+th {
+  font-size: 12px;
+  color: var(--mut);
+  font-weight: 600;
+}
+.tag {
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+}
+.run {
+  background: rgba(227, 160, 8, 0.18);
+  color: var(--warn);
+}
+.done {
+  background: rgba(63, 185, 80, 0.18);
+  color: var(--ok);
+}
+.mut {
+  color: var(--mut);
+}
+.hide {
+  display: none;
+}
+#login,
+#recover {
+  max-width: 340px;
+  margin: 12vh auto;
+}
+#msg {
+  color: var(--dng);
+  font-size: 13px;
+  margin-top: 8px;
+}
+.toast {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--tx);
+  color: var(--bg);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  opacity: 0;
+  transition: 0.2s;
+  pointer-events: none;
+}
+.toast.on {
+  opacity: 1;
+}
+.lnk {
+  color: var(--pri);
+  font-size: 13px;
+  text-decoration: none;
+}
+.lnk:hover {
+  text-decoration: underline;
+}
+#msg.ok,
+#msg2.ok {
+  color: var(--ok);
+}
+#msg2 {
+  color: var(--dng);
+  font-size: 13px;
+  margin-top: 8px;
+}
+th[data-k] {
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+th[data-k]:hover {
+  color: var(--tx);
+}
+th .ar {
+  opacity: 0.45;
+  font-size: 11px;
+}
+th.on {
+  color: var(--pri);
+}
+th.on .ar {
+  opacity: 1;
+}
+
+tr.chk td {
+  background: rgba(227, 160, 8, 0.12);
+}
+
+.mt8 {
+  margin-top: 8px;
+}
+.mt10 {
+  margin-top: 10px;
+}
+.mt12 {
+  margin-top: 12px;
+}
+.w100 {
+  width: 100%;
+}
+label.chk {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 10px;
+  color: var(--tx);
+}
+label.chk input {
+  width: auto;
+}
+
+#backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 50;
+}
+#formCard.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(560px, 94vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: 0;
+  z-index: 51;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+.pager label {
+  margin: 0;
+}
+.pager select {
+  width: auto;
+}
+.pager button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

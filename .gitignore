@@ -1,0 +1,15 @@
+# secrets / config
+js/config.js
+.env
+.env.*
+
+# data kerja (CSV hasil ekstrak, backup)
+*.csv
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+node_modules/
