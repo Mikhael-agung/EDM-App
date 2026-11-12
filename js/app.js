@@ -250,10 +250,23 @@ async function loadJobs() {
   if ($("fc").value) q = q.eq("customer_id", $("fc").value);
   if ($("fm").value) q = q.eq("machine_id", $("fm").value);
   if ($("fk").value === "1") q = q.eq("needs_check", true);
+
   const pr = $("q")
     .value.trim()
-    .replace(/[,()%*]/g, " ");
-  if (pr) q = q.ilike("pr_no", `%${pr}%`);
+    .replace(/[,()%*"\\]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (pr) {
+    if (/^\d+$/.test(pr)) {
+      // angka doang: cocok kalau PR = "123", berakhir " 123", atau " 123 " di tengah
+      q = q.or(
+        `pr_no.ilike."${pr}",pr_no.ilike."% ${pr}",pr_no.ilike."% ${pr} %"`,
+      );
+    } else {
+      q = q.ilike("pr_no", `%${pr}%`);
+    }
+  }
+
   const sz = $("fi")
     .value.trim()
     .replace(/[,()%*]/g, " ");
