@@ -250,23 +250,10 @@ async function loadJobs() {
   if ($("fc").value) q = q.eq("customer_id", $("fc").value);
   if ($("fm").value) q = q.eq("machine_id", $("fm").value);
   if ($("fk").value === "1") q = q.eq("needs_check", true);
-
   const pr = $("q")
     .value.trim()
-    .replace(/[,()%*"\\]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  if (pr) {
-    if (/^\d+$/.test(pr)) {
-      // angka doang: cocok kalau PR = "123", berakhir " 123", atau " 123 " di tengah
-      q = q.or(
-        `pr_no.ilike."${pr}",pr_no.ilike."% ${pr}",pr_no.ilike."% ${pr} %"`,
-      );
-    } else {
-      q = q.ilike("pr_no", `%${pr}%`);
-    }
-  }
-
+    .replace(/[,()%*]/g, " ");
+  if (pr) q = q.ilike("pr_no", `%${pr}%`);
   const sz = $("fi")
     .value.trim()
     .replace(/[,()%*]/g, " ");
@@ -278,6 +265,7 @@ async function loadJobs() {
   }
   rows = data || [];
   render();
+  loadPieces().then(render);
 }
 // ---------- SORT (klik header kolom: naik → turun → default) ----------
 let sortKey = null,
@@ -334,9 +322,11 @@ function render() {
   $("tb").innerHTML =
     all
       .slice(start, start + pageSize)
-      .map(
-        (r) => `
-    <tr class="${r.needs_check ? "chk" : ""}">
+      .map((r) => {
+        const open = openIds.has(r.id);
+        return `
+    <tr class="${r.needs_check ? "chk" : ""}${open ? " openrow" : ""}" id="row-${r.id}">
+      <td><button class="s tg" aria-label="Detail per pcs" aria-expanded="${open}" onclick="togglePcs('${r.id}')"><span class="ch">▸</span></button></td>
       <td>${esc(r.job_date)}</td>
       <td><b>${esc(r.pr_no)}</b>${r.needs_check ? ' <span title="Perlu dicek">⚠</span>' : ""}</td>
       <td>${esc(r.item_size)}</td>
@@ -344,6 +334,7 @@ function render() {
       <td>${hm(r.start_time)}</td>
       <td>${hm(r.end_time)}</td>
       <td>${dur(r.duration_min)}</td>
+      <td id="st-${r.id}">${pcsStat(r)}</td>
       <td>${esc(r.customer_name)}</td>
       <td>${esc(r.machine_name)}</td>
       <td>${r.end_time ? '<span class="tag done">Selesai</span>' : '<span class="tag run">Jalan</span>'}</td>
@@ -352,9 +343,10 @@ function render() {
         <button class="s" onclick="editJob('${r.id}')">Edit</button>
         <button class="s d" onclick="delJob('${r.id}')">Hapus</button>
       </td>
-    </tr>`,
-      )
-      .join("") || '<tr><td colspan="11" class="mut">Belum ada data</td></tr>';
+    </tr>
+    <tr class="det${open ? " open" : ""}" id="det-${r.id}"><td colspan="13"><div class="acc${open ? " open" : ""}"><div class="acc-in" id="acc-${r.id}">${open ? pcsPanel(r) : ""}</div></div></td></tr>`;
+      })
+      .join("") || '<tr><td colspan="13" class="mut">Belum ada data</td></tr>';
   const tot = rows.reduce((a, r) => a + (r.duration_min || 0), 0);
   const nChk = rows.filter((r) => r.needs_check).length;
   $("sum").textContent =
@@ -493,8 +485,162 @@ async function delJob(id) {
     toast(errMsg(error));
     return;
   }
+  delete piecesByJob[id];
+  openIds.delete(id);
   toast("Terhapus");
   loadJobs();
+}
+
+// ---------- PER PCS (dropdown di tiap baris) ----------
+let piecesByJob = {};
+const openIds = new Set();
+const ensuring = new Set();
+function pmin(p) {
+  if (!p.start_time || !p.end_time) return null;
+  const t = (x) => {
+    const [h, m] = x.split(":");
+    return parseInt(h) * 60 + parseInt(m);
+  };
+  let d = t(p.end_time) - t(p.start_time);
+  if (d < 0) d += 1440; // lewat tengah malam
+  return d;
+}
+function pcsNums(r) {
+  const d = (piecesByJob[r.id] || []).map(pmin).filter((x) => x != null);
+  return {
+    n: d.length,
+    avg: d.length ? Math.round(d.reduce((a, b) => a + b, 0) / d.length) : null,
+  };
+}
+function pcsStat(r) {
+  const s = pcsNums(r);
+  return s.n ? `${dur(s.avg)} · ${s.n}/${r.qty}` : "-";
+}
+function hm0(t) {
+  return t ? t.slice(0, 5) : "";
+}
+async function loadPieces() {
+  const all = [];
+  let from = 0;
+  for (;;) {
+    const { data, error } = await sb
+      .from("job_pieces")
+      .select("*")
+      .order("job_id")
+      .order("piece_no")
+      .range(from, from + 999);
+    if (error) {
+      toast(errMsg(error));
+      return;
+    }
+    all.push(...data);
+    if (data.length < 1000) break;
+    from += 1000;
+  }
+  piecesByJob = {};
+  all.forEach((p) => (piecesByJob[p.job_id] ||= []).push(p));
+}
+function pcsPanel(r) {
+  const list = piecesByJob[r.id] || [];
+  if (!list.length) return '<div class="pc-box mut">Memuat...</div>';
+  const head = `<div class="pc-head mut">Waktu per pcs · isi manual tiap pcs selesai, lalu Simpan</div>`;
+  return (
+    '<div class="pc-box">' +
+    head +
+    list
+      .map((p) => {
+        const k = `${r.id}_${p.piece_no}`;
+        const m = pmin(p);
+        return `<div class="pc">
+      <b class="pn">Pcs ${p.piece_no}</b>
+      <input id="ps_${k}" type="time" aria-label="Mulai pcs ${p.piece_no}" value="${hm0(p.start_time)}" />
+      <button type="button" class="s" onclick="nowTo('ps_${k}')">Now</button>
+      <span class="mut">→</span>
+      <input id="pe_${k}" type="time" aria-label="Selesai pcs ${p.piece_no}" value="${hm0(p.end_time)}" />
+      <button type="button" class="s" onclick="nowTo('pe_${k}')">Now</button>
+      <span class="pd" id="pd_${k}">${m == null ? "-" : dur(m)}</span>
+      <button type="button" class="s p" onclick="savePcs('${r.id}',${p.piece_no})">Simpan</button>
+    </div>`;
+      })
+      .join("") +
+    "</div>"
+  );
+}
+async function ensurePieces(r) {
+  if (ensuring.has(r.id)) return false;
+  ensuring.add(r.id);
+  try {
+    const have = new Set((piecesByJob[r.id] || []).map((p) => p.piece_no));
+    const add = [];
+    for (let i = 1; i <= (r.qty || 1); i++)
+      if (!have.has(i)) add.push({ job_id: r.id, piece_no: i });
+    if (add.length) {
+      const { data, error } = await sb.from("job_pieces").insert(add).select();
+      if (error) {
+        toast(errMsg(error));
+        return false;
+      }
+      piecesByJob[r.id] = (piecesByJob[r.id] || [])
+        .concat(data)
+        .sort((a, b) => a.piece_no - b.piece_no);
+    }
+    return true;
+  } finally {
+    ensuring.delete(r.id);
+  }
+}
+async function togglePcs(id) {
+  const r = rows.find((x) => x.id === id);
+  const row = $("row-" + id),
+    det = $("det-" + id);
+  if (!r || !row || !det) return;
+  const acc = det.querySelector(".acc"),
+    btn = row.querySelector(".tg");
+  if (openIds.has(id)) {
+    openIds.delete(id);
+    acc.classList.remove("open");
+    det.classList.remove("open");
+    row.classList.remove("openrow");
+    btn.setAttribute("aria-expanded", "false");
+    return;
+  }
+  openIds.add(id);
+  row.classList.add("openrow");
+  det.classList.add("open");
+  btn.setAttribute("aria-expanded", "true");
+  $("acc-" + id).innerHTML = '<div class="pc-box mut">Memuat...</div>';
+  requestAnimationFrame(() => acc.classList.add("open"));
+  const ok = await ensurePieces(r);
+  if (!ok) {
+    openIds.delete(id);
+    render();
+    return;
+  }
+  if (openIds.has(id)) $("acc-" + id).innerHTML = pcsPanel(r);
+}
+async function savePcs(jobId, no) {
+  const k = `${jobId}_${no}`;
+  const s = $("ps_" + k).value || null,
+    e = $("pe_" + k).value || null;
+  const { data, error } = await sb
+    .from("job_pieces")
+    .update({ start_time: s, end_time: e })
+    .eq("job_id", jobId)
+    .eq("piece_no", no)
+    .select()
+    .single();
+  if (error) {
+    toast(errMsg(error));
+    return;
+  }
+  const list = piecesByJob[jobId] || [];
+  const i = list.findIndex((p) => p.piece_no === no);
+  if (i >= 0) list[i] = data;
+  const m = pmin(data);
+  $("pd_" + k).textContent = m == null ? "-" : dur(m);
+  const r = rows.find((x) => x.id === jobId);
+  if (r && $("st-" + jobId)) $("st-" + jobId).textContent = pcsStat(r);
+  toast(`Pcs ${no} tersimpan`);
 }
 
 // ---------- EXPORT CSV ----------
@@ -510,6 +656,8 @@ $("btnCsv").onclick = () => {
     "Customer",
     "Mesin",
     "Catatan",
+    "Pcs selesai",
+    "Rata-rata per pcs (menit)",
   ];
   const cell = (v) => '"' + String(v ?? "").replace(/"/g, '""') + '"';
   const lines = [head.map(cell).join(",")].concat(
@@ -525,6 +673,8 @@ $("btnCsv").onclick = () => {
         r.customer_name,
         r.machine_name,
         r.notes,
+        pcsNums(r).n,
+        pcsNums(r).avg,
       ]
         .map(cell)
         .join(","),

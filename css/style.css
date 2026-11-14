@@ -269,3 +269,94 @@ label.chk input {
   opacity: 0.4;
   cursor: default;
 }
+
+/* ---------- dropdown per pcs ---------- */
+button.tg {
+  padding: 2px 8px;
+}
+.tg .ch {
+  display: inline-block;
+  transition: transform 0.25s ease;
+}
+tr.openrow .ch {
+  transform: rotate(90deg);
+}
+tr.det td {
+  padding: 0;
+  border-bottom: 0;
+  white-space: normal;
+}
+tr.det.open td {
+  border-bottom: 1px solid var(--bd);
+}
+.acc {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease;
+}
+.acc.open {
+  grid-template-rows: 1fr;
+}
+.acc-in {
+  overflow: hidden;
+  min-height: 0;
+}
+.pc-box {
+  padding: 10px 12px 14px 44px;
+}
+.pc-head {
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.pc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.pc .pn {
+  width: 56px;
+}
+.pc input[type="time"] {
+  width: 120px;
+}
+.pc .pd {
+  min-width: 64px;
+  font-weight: 600;
+}
+@media (prefers-reduced-motion: reduce) {
+  .acc,
+  .tg .ch {
+    transition: none;
+  }
+}
+
+/* ---------- HP kecil: paksa 2 kolom biar nggak memanjang ---------- */
+.row input,
+.row select {
+  min-width: 0;
+}
+@media (max-width: 480px) {
+  .wrap {
+    padding: 8px;
+  }
+  .card {
+    padding: 12px;
+  }
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .grid > .row {
+    grid-column: 1 / -1;
+  }
+  .pc-box {
+    padding-left: 12px;
+  }
+}
+@media (max-width: 340px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
