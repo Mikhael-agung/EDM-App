@@ -434,13 +434,15 @@ $("btnSave").onclick = async () => {
     notes: $("f_notes").value.trim() || null,
     needs_check: $("f_chk").checked,
   };
-  const { error } = editId
-    ? await sb.from("jobs").update(payload).eq("id", editId)
-    : await sb.from("jobs").insert(payload);
-  if (error) {
-    toast(errMsg(error));
+  const old = editId ? rows.find((x) => x.id === editId) : null;
+  const res = editId
+    ? await sb.from("jobs").update(payload).eq("id", editId).select().single()
+    : await sb.from("jobs").insert(payload).select().single();
+  if (res.error) {
+    toast(errMsg(res.error));
     return;
   }
+  await syncPieces(res.data, old);
   toast(editId ? "Data diupdate" : "Data tersimpan");
   resetForm();
   loadJobs();
@@ -572,8 +574,16 @@ async function ensurePieces(r) {
   try {
     const have = new Set((piecesByJob[r.id] || []).map((p) => p.piece_no));
     const add = [];
-    for (let i = 1; i <= (r.qty || 1); i++)
-      if (!have.has(i)) add.push({ job_id: r.id, piece_no: i });
+    const qty = r.qty || 1;
+    for (let i = 1; i <= qty; i++)
+      if (!have.has(i))
+        add.push({
+          job_id: r.id,
+          piece_no: i,
+          // pcs 1 ikut jam mulai pekerjaan, pcs terakhir ikut jam selesai
+          start_time: i === 1 ? r.start_time || null : null,
+          end_time: i === qty ? r.end_time || null : null,
+        });
     if (add.length) {
       const { data, error } = await sb.from("job_pieces").insert(add).select();
       if (error) {
@@ -587,6 +597,39 @@ async function ensurePieces(r) {
     return true;
   } finally {
     ensuring.delete(r.id);
+  }
+}
+// dipanggil setelah pekerjaan disimpan: buat pcs, lalu ikutkan jam mulai/selesai
+async function syncPieces(job, old) {
+  if (!job) return;
+  if (!(await ensurePieces(job))) return;
+  const list = piecesByJob[job.id] || [];
+  const first = list.find((p) => p.piece_no === 1);
+  const last = list.find((p) => p.piece_no === (job.qty || 1));
+  const upd = [];
+  // hanya ikut kalau pcs masih kosong atau sama dengan nilai lama (belum diubah manual)
+  if (
+    old &&
+    first &&
+    hm0(job.start_time) !== hm0(first.start_time) &&
+    (!first.start_time || hm0(first.start_time) === hm0(old.start_time))
+  )
+    upd.push([first, { start_time: job.start_time || null }]);
+  if (
+    old &&
+    last &&
+    hm0(job.end_time) !== hm0(last.end_time) &&
+    (!last.end_time || hm0(last.end_time) === hm0(old.end_time))
+  )
+    upd.push([last, { end_time: job.end_time || null }]);
+  for (const [p, patch] of upd) {
+    const { data, error } = await sb
+      .from("job_pieces")
+      .update(patch)
+      .eq("id", p.id)
+      .select()
+      .single();
+    if (!error) Object.assign(p, data);
   }
 }
 async function togglePcs(id) {
@@ -640,6 +683,23 @@ async function savePcs(jobId, no) {
   $("pd_" + k).textContent = m == null ? "-" : dur(m);
   const r = rows.find((x) => x.id === jobId);
   if (r && $("st-" + jobId)) $("st-" + jobId).textContent = pcsStat(r);
+  const jp = {};
+  if (r) {
+    if (no === 1 && s && !r.start_time) jp.start_time = s;
+    if (no === (r.qty || 1) && e && hm0(r.end_time) !== e) jp.end_time = e;
+  }
+  if (Object.keys(jp).length) {
+    const { error: e2 } = await sb.from("jobs").update(jp).eq("id", jobId);
+    if (!e2) {
+      toast(
+        jp.end_time
+          ? "Pcs terakhir selesai, pekerjaan ditandai Selesai"
+          : `Pcs ${no} tersimpan`,
+      );
+      loadJobs();
+      return;
+    }
+  }
   toast(`Pcs ${no} tersimpan`);
 }
 
