@@ -9,6 +9,33 @@ let rows = [],
 let page = 1,
   pageSize = 25;
 
+// ---------- PR: huruf besar + spasi (mw2 123 -> MW 2 123) ----------
+function normPr(s) {
+  return String(s || "")
+    .toUpperCase()
+    .replace(/([A-Z])(\d)/g, "$1 $2")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+const nospace = (s) =>
+  String(s || "")
+    .toUpperCase()
+    .replace(/\s+/g, "");
+// pencarian realtime di data yang sudah dimuat: PR (potongan apa saja, spasi diabaikan) + item
+let shown = [];
+function filteredRows() {
+  const q = nospace($("q").value);
+  const fi = $("fi").value.trim().toLowerCase();
+  return rows.filter(
+    (r) =>
+      (!q || nospace(r.pr_no).includes(q)) &&
+      (!fi ||
+        String(r.item_size || "")
+          .toLowerCase()
+          .includes(fi)),
+  );
+}
+
 // Terjemahin error Supabase jadi pesan yang jelas
 function errMsg(err) {
   const m = String((err && err.message) || err || "").toLowerCase();
@@ -238,7 +265,20 @@ async function addMaster(table) {
 }
 
 // ---------- JOBS ----------
+// ---------- FILTER: minimize di HP ----------
+$("btnFilter").onclick = () => {
+  const o = $("filterBody").classList.toggle("open");
+  $("btnFilter").setAttribute("aria-expanded", String(o));
+};
+function updFilterBadge() {
+  const n = ["q", "fi", "d1", "d2", "fc", "fm", "fk"].filter(
+    (id) => $(id).value,
+  ).length;
+  $("fbadge").textContent = n ? ` · ${n} aktif` : "";
+}
+
 async function loadJobs() {
+  updFilterBadge();
   let q = sb
     .from("jobs_view")
     .select("*")
@@ -250,14 +290,6 @@ async function loadJobs() {
   if ($("fc").value) q = q.eq("customer_id", $("fc").value);
   if ($("fm").value) q = q.eq("machine_id", $("fm").value);
   if ($("fk").value === "1") q = q.eq("needs_check", true);
-  const pr = $("q")
-    .value.trim()
-    .replace(/[,()%*]/g, " ");
-  if (pr) q = q.ilike("pr_no", `%${pr}%`);
-  const sz = $("fi")
-    .value.trim()
-    .replace(/[,()%*]/g, " ");
-  if (sz) q = q.ilike("item_size", `%${sz}%`);
   const { data, error } = await q;
   if (error) {
     toast(errMsg(error));
@@ -274,8 +306,8 @@ function sortVal(r, k) {
   return k === "status" ? (r.end_time ? 1 : 0) : r[k];
 }
 function sortedRows() {
-  if (!sortKey) return rows;
-  return [...rows].sort((a, b) => {
+  if (!sortKey) return shown;
+  return [...shown].sort((a, b) => {
     const x = sortVal(a, sortKey),
       y = sortVal(b, sortKey);
     if (x == null && y == null) return 0;
@@ -306,6 +338,7 @@ document.querySelectorAll("th[data-k]").forEach((th) => {
 });
 
 function render() {
+  shown = filteredRows();
   document.querySelectorAll("th[data-k]").forEach((th) => {
     const on = th.dataset.k === sortKey;
     th.classList.toggle("on", on);
@@ -347,14 +380,16 @@ function render() {
     <tr class="det${open ? " open" : ""}" id="det-${r.id}"><td colspan="13"><div class="acc${open ? " open" : ""}"><div class="acc-in" id="acc-${r.id}">${open ? pcsPanel(r) : ""}</div></div></td></tr>`;
       })
       .join("") || '<tr><td colspan="13" class="mut">Belum ada data</td></tr>';
-  const tot = rows.reduce((a, r) => a + (r.duration_min || 0), 0);
-  const nChk = rows.filter((r) => r.needs_check).length;
+  const tot = shown.reduce((a, r) => a + (r.duration_min || 0), 0);
+  const nChk = shown.filter((r) => r.needs_check).length;
   $("sum").textContent =
-    `${rows.length} data · total ${dur(tot)} jam mesin` +
+    `${shown.length} data · total ${dur(tot)} jam mesin` +
     (nChk ? ` · ${nChk} perlu dicek` : "");
   $("pgInfo").textContent = all.length
     ? `${start + 1}–${Math.min(start + pageSize, all.length)} dari ${all.length} · hal ${page}/${pages}`
     : "0 data";
+  $("btnOkAll").textContent = nChk ? `OK semua (${nChk})` : "OK semua";
+  $("btnOkAll").disabled = !nChk;
   $("pgFirst").disabled = $("pgPrev").disabled = page <= 1;
   $("pgNext").disabled = $("pgLast").disabled = page >= pages;
 }
@@ -379,7 +414,15 @@ $("pgSize").onchange = () => {
   page = 1;
   render();
 };
-["q", "fi", "d1", "d2", "fc", "fm", "fk"].forEach((id) => {
+// PR + item: realtime tanpa tunggu server
+["q", "fi"].forEach((id) =>
+  $(id).addEventListener("input", () => {
+    page = 1;
+    updFilterBadge();
+    render();
+  }),
+);
+["d1", "d2", "fc", "fm", "fk"].forEach((id) => {
   let t;
   $(id).addEventListener("input", () => {
     clearTimeout(t);
@@ -396,6 +439,39 @@ $("btnReset").onclick = () => {
   page = 1;
   loadJobs();
 };
+
+// tandai semua data (hasil filter, semua halaman) yang perlu dicek jadi sudah dicek
+$("btnOkAll").onclick = async () => {
+  const ids = shown.filter((r) => r.needs_check).map((r) => r.id);
+  if (!ids.length) {
+    toast("Tidak ada data perlu dicek");
+    return;
+  }
+  if (!confirm(`Tandai ${ids.length} data sebagai sudah dicek?`)) return;
+  for (let i = 0; i < ids.length; i += 100) {
+    const { error } = await sb
+      .from("jobs")
+      .update({ needs_check: false })
+      .in("id", ids.slice(i, i + 100));
+    if (error) {
+      toast(errMsg(error));
+      loadJobs();
+      return;
+    }
+  }
+  toast(`${ids.length} data ditandai sudah dicek`);
+  loadJobs();
+};
+
+$("f_pr").addEventListener("input", (e) => {
+  const el = e.target,
+    p = el.selectionStart;
+  el.value = el.value.toUpperCase();
+  el.setSelectionRange(p, p);
+});
+$("f_pr").addEventListener("blur", (e) => {
+  e.target.value = normPr(e.target.value);
+});
 
 function resetForm() {
   editId = null;
@@ -417,7 +493,7 @@ document.addEventListener("keydown", (e) => {
 });
 
 $("btnSave").onclick = async () => {
-  const pr = $("f_pr").value.trim();
+  const pr = normPr($("f_pr").value);
   if (!pr) {
     toast("PR wajib diisi");
     return;
@@ -721,7 +797,7 @@ $("btnCsv").onclick = () => {
   ];
   const cell = (v) => '"' + String(v ?? "").replace(/"/g, '""') + '"';
   const lines = [head.map(cell).join(",")].concat(
-    rows.map((r) =>
+    shown.map((r) =>
       [
         r.job_date,
         r.pr_no,

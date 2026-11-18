@@ -56,7 +56,7 @@
             </div>
             <div>
               <label for="f_pr">PR</label>
-              <input id="f_pr" placeholder="MW2 125" />
+              <input id="f_pr" placeholder="MW 2 125" autocapitalize="characters" />
             </div>
             <div>
               <label for="f_item">Ukuran item</label>
@@ -138,10 +138,22 @@
         </div>
 
         <div class="card">
+          <button
+            type="button"
+            id="btnFilter"
+            class="fbtn"
+            aria-expanded="false"
+            aria-controls="filterBody"
+          >
+            <span>Filter<span id="fbadge"></span></span
+            ><span class="ch">▸</span>
+          </button>
+          <div class="facc" id="filterBody">
+            <div class="facc-in">
           <div class="grid">
             <div>
               <label for="q">No. PR</label>
-              <input id="q" placeholder="mw2 125" />
+              <input id="q" placeholder="mw 2 atau 123" />
             </div>
             <div>
               <label for="fi">Ukuran item</label>
@@ -170,10 +182,13 @@
                 <option value="1">Perlu dicek</option>
               </select>
             </div>
-            <div class="row">
-              <button id="btnReset">Reset</button>
-              <button id="btnCsv">Export CSV</button>
+          </div>
             </div>
+          </div>
+          <div class="row wrap mt10">
+            <button id="btnReset">Reset</button>
+            <button id="btnCsv">Export CSV</button>
+            <button id="btnOkAll" class="p">OK semua</button>
           </div>
           <div class="mut mt8" id="sum"></div>
         </div>
