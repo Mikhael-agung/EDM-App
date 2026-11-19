@@ -17,6 +17,13 @@ function normPr(s) {
     .replace(/\s+/g, " ")
     .trim();
 }
+// ukuran item: 123x123 / 123X123 / 123 × 123 -> 123 x 123
+function normItem(s) {
+  return String(s || "")
+    .replace(/(\d)\s*[xX×]\s*(?=\d)/g, "$1 x ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 const nospace = (s) =>
   String(s || "")
     .toUpperCase()
@@ -25,14 +32,11 @@ const nospace = (s) =>
 let shown = [];
 function filteredRows() {
   const q = nospace($("q").value);
-  const fi = $("fi").value.trim().toLowerCase();
+  const fi = nospace($("fi").value);
   return rows.filter(
     (r) =>
       (!q || nospace(r.pr_no).includes(q)) &&
-      (!fi ||
-        String(r.item_size || "")
-          .toLowerCase()
-          .includes(fi)),
+      (!fi || nospace(r.item_size).includes(fi)),
   );
 }
 
@@ -265,6 +269,15 @@ async function addMaster(table) {
 }
 
 // ---------- JOBS ----------
+// ---------- MODE GLASS: penuh / ringan ----------
+$("btnGlass").onclick = () => {
+  const lite = document.documentElement.classList.toggle("lite");
+  try {
+    localStorage.setItem("glass", lite ? "lite" : "full");
+  } catch (e) {}
+  toast(lite ? "Mode ringan (tanpa blur)" : "Mode glass penuh");
+};
+
 // ---------- FILTER: minimize di HP ----------
 $("btnFilter").onclick = () => {
   const o = $("filterBody").classList.toggle("open");
@@ -469,6 +482,9 @@ $("f_pr").addEventListener("input", (e) => {
   el.value = el.value.toUpperCase();
   el.setSelectionRange(p, p);
 });
+$("f_item").addEventListener("blur", (e) => {
+  e.target.value = normItem(e.target.value);
+});
 $("f_pr").addEventListener("blur", (e) => {
   e.target.value = normPr(e.target.value);
 });
@@ -501,7 +517,7 @@ $("btnSave").onclick = async () => {
   const payload = {
     job_date: $("f_date").value || today(),
     pr_no: pr,
-    item_size: $("f_item").value.trim() || null,
+    item_size: normItem($("f_item").value) || null,
     qty: parseInt($("f_qty").value) || 1,
     start_time: $("f_start").value || null,
     end_time: $("f_end").value || null,
@@ -826,3 +842,26 @@ $("btnCsv").onclick = () => {
 };
 
 init();
+
+// ---------- PWA ----------
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
+let installEv = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  installEv = e;
+  $("btnInstall").classList.remove("hide");
+});
+$("btnInstall").onclick = async () => {
+  if (!installEv) return;
+  installEv.prompt();
+  await installEv.userChoice;
+  installEv = null;
+  $("btnInstall").classList.add("hide");
+};
+window.addEventListener("appinstalled", () =>
+  $("btnInstall").classList.add("hide"),
+);

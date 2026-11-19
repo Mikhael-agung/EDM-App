@@ -370,38 +370,45 @@ button:disabled {
 }
 
 /* =====================================================
-   GLASS THEME (iOS acrylic / liquid glass)
+   LIQUID GLASS v2 (gaya iOS, dioptimasi buat Android)
+   - backdrop-filter HANYA di header, popup, toast
+   - kartu/tombol/tabel: tanpa blur, kaca ditiru pakai gradient + rim light
+   - html.lite = mode ringan (tanpa blur sama sekali)
    ===================================================== */
 :root {
   color-scheme: light dark;
-  --base: #eef2fb;
+  --base: #e9eefb;
   --card: rgba(255, 255, 255, 0.55);
-  --bd: rgba(255, 255, 255, 0.75);
-  --fld: rgba(255, 255, 255, 0.55);
-  --hov: rgba(255, 255, 255, 0.5);
-  --shadow: 0 8px 32px rgba(40, 60, 120, 0.18);
-  --hi:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.25);
-  --blur: blur(24px) saturate(180%);
-  --blob1: #a5c8ff;
-  --blob2: #e0b8ff;
-  --blob3: #9ff0e0;
+  --spec: rgba(255, 255, 255, 0.7);
+  --fld: rgba(255, 255, 255, 0.6);
+  --hov: rgba(255, 255, 255, 0.85);
+  --bd: rgba(255, 255, 255, 0.6);
+  --line: rgba(90, 110, 170, 0.16);
+  --rim1: rgba(255, 255, 255, 0.95);
+  --rim2: rgba(255, 255, 255, 0.4);
+  --shd: rgba(50, 70, 140, 0.2);
+  --blob1: #9bbcff;
+  --blob2: #d9b0ff;
+  --blob3: #8fe8d8;
+  --blob4: #ffc9a8;
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --base: #080c18;
-    --card: rgba(255, 255, 255, 0.07);
-    --bd: rgba(255, 255, 255, 0.16);
-    --fld: rgba(255, 255, 255, 0.06);
-    --hov: rgba(255, 255, 255, 0.12);
-    --shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
-    --hi:
-      inset 0 1px 0 rgba(255, 255, 255, 0.22),
-      inset 0 -1px 0 rgba(255, 255, 255, 0.04);
-    --blob1: #2f4dff;
-    --blob2: #8b2fe0;
-    --blob3: #0f9fa8;
+    --base: #06080f;
+    --card: rgba(30, 36, 56, 0.6);
+    --spec: rgba(255, 255, 255, 0.1);
+    --fld: rgba(255, 255, 255, 0.07);
+    --hov: rgba(255, 255, 255, 0.15);
+    --bd: rgba(255, 255, 255, 0.1);
+    --line: rgba(255, 255, 255, 0.09);
+    --rim1: rgba(255, 255, 255, 0.3);
+    --rim2: rgba(255, 255, 255, 0.07);
+    --shd: rgba(0, 0, 0, 0.5);
+    --blob1: #2a45ff;
+    --blob2: #8a2be2;
+    --blob3: #0aa5b5;
+    --blob4: #ff4f86;
   }
 }
 html {
@@ -410,40 +417,58 @@ html {
 body {
   background: transparent;
   min-height: 100vh;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto,
+    system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
 }
+/* latar statis, dipromosikan ke layer sendiri biar scroll nggak repaint */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
+  transform: translateZ(0);
   background:
-    radial-gradient(40% 35% at 12% 8%, var(--blob1) 0, transparent 70%),
-    radial-gradient(38% 32% at 90% 14%, var(--blob2) 0, transparent 70%),
-    radial-gradient(45% 38% at 75% 92%, var(--blob3) 0, transparent 70%),
-    radial-gradient(35% 30% at 8% 85%, var(--blob2) 0, transparent 75%);
-  opacity: 0.75;
+    radial-gradient(42% 34% at 10% 6%, var(--blob1) 0, transparent 72%),
+    radial-gradient(38% 30% at 92% 12%, var(--blob2) 0, transparent 72%),
+    radial-gradient(46% 36% at 78% 94%, var(--blob3) 0, transparent 72%),
+    radial-gradient(34% 28% at 6% 88%, var(--blob4) 0, transparent 75%);
+  opacity: 0.7;
 }
 
-/* kaca */
+/* kaca = tint + kilau pojok kiri atas + rim light (tanpa blur) */
 .card,
 header,
 .pager {
-  background: var(--card);
+  background-color: var(--card);
+  background-image: radial-gradient(
+    130% 90% at 0% 0%,
+    var(--spec) 0,
+    transparent 55%
+  );
   border: 1px solid var(--bd);
-  border-radius: 20px;
-  -webkit-backdrop-filter: var(--blur);
-  backdrop-filter: var(--blur);
-  box-shadow: var(--shadow), var(--hi);
+  border-radius: 26px;
+  box-shadow:
+    inset 1px 1px 0 var(--rim1),
+    inset -1px -1px 0 var(--rim2),
+    0 10px 26px var(--shd);
 }
 .pager {
   padding: 8px 14px;
+  border-radius: 999px;
 }
 header {
   position: sticky;
   top: 8px;
   z-index: 20;
-  padding: 10px 16px;
+  padding: 10px 18px;
   margin-bottom: 12px;
+  border-radius: 22px;
+}
+.tw {
+  padding: 6px 12px;
 }
 
 /* field */
@@ -452,20 +477,19 @@ select,
 textarea {
   background: var(--fld);
   border: 1px solid var(--bd);
-  border-radius: 12px;
-  padding: 9px 10px;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+  border-radius: 16px;
+  padding: 10px 12px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12);
   transition:
     border-color 0.2s,
-    box-shadow 0.2s,
-    background 0.2s;
+    box-shadow 0.2s;
 }
 input:focus,
 select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--pri);
-  box-shadow: 0 0 0 3px rgba(76, 141, 255, 0.28);
+  box-shadow: 0 0 0 3px rgba(76, 141, 255, 0.3);
 }
 input[type="checkbox"] {
   accent-color: var(--pri);
@@ -481,136 +505,126 @@ select option {
   }
 }
 
-/* tombol */
+/* tombol kapsul, pantulan pegas saat ditekan (hanya transform, murah) */
 button {
   background: var(--fld);
   border: 1px solid var(--bd);
-  border-radius: 12px;
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  box-shadow: var(--hi);
+  border-radius: 999px;
+  box-shadow:
+    inset 1px 1px 0 var(--rim1),
+    0 2px 6px var(--shd);
   transition:
-    background 0.2s,
-    transform 0.1s,
-    box-shadow 0.2s;
+    transform 0.35s var(--spring),
+    background 0.2s;
 }
-button:hover:not(:disabled) {
-  background: var(--hov);
+@media (hover: hover) {
+  button:hover:not(:disabled) {
+    background: var(--hov);
+  }
 }
 button:active:not(:disabled) {
-  transform: scale(0.96);
+  transform: scale(0.93);
 }
 button.p {
-  background: linear-gradient(180deg, #5b9bff, #2a6cf0);
+  background: linear-gradient(180deg, #62a0ff, #2a6cf0);
   border-color: rgba(255, 255, 255, 0.35);
   color: #fff;
   box-shadow:
-    0 4px 14px rgba(42, 108, 240, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.45);
-}
-button.p:hover:not(:disabled) {
-  background: linear-gradient(180deg, #70a8ff, #3a7bff);
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 4px 12px rgba(42, 108, 240, 0.4);
 }
 button.d {
   color: var(--dng);
 }
+button.tg {
+  padding: 2px 8px;
+}
 
 /* tabel */
-.tw {
-  padding: 6px 10px;
-}
 th,
 td {
-  border-bottom: 1px solid var(--bd);
+  border-bottom: 1px solid var(--line);
 }
-tbody tr:not(.det):not(.chk):hover td {
-  background: var(--hov);
+@media (hover: hover) {
+  tbody tr:not(.det):not(.chk):hover td {
+    background: var(--hov);
+  }
 }
 tr.chk td {
   background: rgba(255, 190, 40, 0.14);
 }
-.tag {
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
 
-/* popup edit */
+/* popup edit: dim ringan, kartu di-blur (cuma 1 elemen) */
 #backdrop {
-  background: rgba(10, 14, 30, 0.35);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  background: rgba(5, 8, 20, 0.5);
 }
 #formCard.modal {
-  border-radius: 24px;
-  background: var(--card);
-  -webkit-backdrop-filter: blur(40px) saturate(200%);
-  backdrop-filter: blur(40px) saturate(200%);
+  border-radius: 30px;
+  background-color: var(--card);
   box-shadow:
-    0 24px 70px rgba(0, 0, 0, 0.5),
-    var(--hi);
+    inset 1px 1px 0 var(--rim1),
+    inset -1px -1px 0 var(--rim2),
+    0 24px 60px rgba(0, 0, 0, 0.45);
 }
 @media (prefers-color-scheme: light) {
   #formCard.modal {
-    background: rgba(255, 255, 255, 0.72);
+    background-color: rgba(255, 255, 255, 0.78);
+  }
+}
+.toast {
+  background: rgba(24, 30, 48, 0.85);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  padding: 10px 18px;
+}
+
+/* ---- blur: cuma 3 tempat, dan hanya di mode penuh ---- */
+html:not(.lite) header {
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  backdrop-filter: blur(14px) saturate(150%);
+}
+html:not(.lite) #formCard.modal {
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+}
+html:not(.lite) .toast {
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+/* mode ringan: tanpa blur, kartu sedikit lebih solid biar tetap terbaca */
+html.lite header,
+html.lite #formCard.modal {
+  background-color: rgba(24, 30, 48, 0.92);
+}
+@media (prefers-color-scheme: light) {
+  html.lite header,
+  html.lite #formCard.modal {
+    background-color: rgba(255, 255, 255, 0.92);
   }
 }
 
-/* toast */
-.toast {
-  background: rgba(24, 30, 48, 0.7);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 14px;
-  padding: 10px 16px;
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  backdrop-filter: blur(16px) saturate(180%);
-}
-
-/* HP: blur lebih ringan biar tetap lancar */
-@media (max-width: 480px) {
+/* HP: bayangan lebih tipis biar ringan */
+@media (max-width: 768px) {
   .card,
   header,
   .pager {
-    -webkit-backdrop-filter: blur(16px) saturate(160%);
-    backdrop-filter: blur(16px) saturate(160%);
-    border-radius: 18px;
+    border-radius: 22px;
+    box-shadow:
+      inset 1px 1px 0 var(--rim1),
+      inset -1px -1px 0 var(--rim2),
+      0 6px 16px var(--shd);
   }
-}
-
-/* fallback: tanpa blur / user minta kurangi transparansi */
-@supports not (
-  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
-) {
-  :root {
-    --card: #fff;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --card: #181e27;
-    }
+  .pager {
+    border-radius: 999px;
   }
 }
 @media (prefers-reduced-transparency: reduce) {
-  :root {
-    --card: #fff;
-    --fld: #f4f5f7;
-  }
-  .card,
-  header,
-  .pager,
-  button,
-  #formCard.modal,
-  #backdrop,
-  .toast {
+  html:not(.lite) header,
+  html:not(.lite) #formCard.modal,
+  html:not(.lite) .toast {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --card: #181e27;
-      --fld: #0f1319;
-    }
   }
 }
 
@@ -654,4 +668,12 @@ tr.chk td {
   .fbtn .ch {
     transition: none;
   }
+}
+
+header > div {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }

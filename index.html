@@ -4,7 +4,32 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Log WEDM</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta
+      name="theme-color"
+      content="#e9eefb"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#06080f"
+      media="(prefers-color-scheme: dark)"
+    />
+    <link rel="icon" type="image/png" href="icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Log WEDM" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      // mode glass: auto ringan di HP dengan RAM <= 4 GB, bisa diganti manual lewat tombol ✦
+      try {
+        var g = localStorage.getItem("glass"),
+          m = navigator.deviceMemory;
+        if (g === "lite" || (g === null && m && m <= 4))
+          document.documentElement.classList.add("lite");
+      } catch (e) {}
+    </script>
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
@@ -42,6 +67,15 @@
           <h1>Log Pengerjaan WEDM</h1>
           <div>
             <span class="mut" id="who"></span>
+            <button class="s p hide" id="btnInstall">Install</button>
+            <button
+              class="s"
+              id="btnGlass"
+              aria-label="Ganti mode glass penuh atau ringan"
+              title="Glass penuh / ringan"
+            >
+              ✦
+            </button>
             <button class="s" id="btnOut">Keluar</button>
           </div>
         </header>
@@ -56,11 +90,19 @@
             </div>
             <div>
               <label for="f_pr">PR</label>
-              <input id="f_pr" placeholder="MW 2 125" autocapitalize="characters" />
+              <input
+                id="f_pr"
+                placeholder="MW 2 125"
+                autocapitalize="characters"
+              />
             </div>
             <div>
               <label for="f_item">Ukuran item</label>
-              <input id="f_item" placeholder="16.37 x 117.06" />
+              <input
+                id="f_item"
+                placeholder="16.37 x 117.06"
+                inputmode="text"
+              />
             </div>
             <div>
               <label for="f_qty">Qty (pcs)</label>
@@ -150,39 +192,39 @@
           </button>
           <div class="facc" id="filterBody">
             <div class="facc-in">
-          <div class="grid">
-            <div>
-              <label for="q">No. PR</label>
-              <input id="q" placeholder="mw 2 atau 123" />
-            </div>
-            <div>
-              <label for="fi">Ukuran item</label>
-              <input id="fi" placeholder="16.37 atau 117.06" />
-            </div>
-            <div>
-              <label for="d1">Dari</label>
-              <input id="d1" type="date" />
-            </div>
-            <div>
-              <label for="d2">Sampai</label>
-              <input id="d2" type="date" />
-            </div>
-            <div>
-              <label for="fc">Customer</label>
-              <select id="fc"></select>
-            </div>
-            <div>
-              <label for="fm">Mesin</label>
-              <select id="fm"></select>
-            </div>
-            <div>
-              <label for="fk">Cek</label>
-              <select id="fk">
-                <option value="">Semua</option>
-                <option value="1">Perlu dicek</option>
-              </select>
-            </div>
-          </div>
+              <div class="grid">
+                <div>
+                  <label for="q">No. PR</label>
+                  <input id="q" placeholder="mw 2 atau 123" />
+                </div>
+                <div>
+                  <label for="fi">Ukuran item</label>
+                  <input id="fi" placeholder="16.37 atau 117.06" />
+                </div>
+                <div>
+                  <label for="d1">Dari</label>
+                  <input id="d1" type="date" />
+                </div>
+                <div>
+                  <label for="d2">Sampai</label>
+                  <input id="d2" type="date" />
+                </div>
+                <div>
+                  <label for="fc">Customer</label>
+                  <select id="fc"></select>
+                </div>
+                <div>
+                  <label for="fm">Mesin</label>
+                  <select id="fm"></select>
+                </div>
+                <div>
+                  <label for="fk">Cek</label>
+                  <select id="fk">
+                    <option value="">Semua</option>
+                    <option value="1">Perlu dicek</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
           <div class="row wrap mt10">
@@ -205,7 +247,9 @@
                 <th data-k="start_time">Mulai<span class="ar"></span></th>
                 <th data-k="end_time">Selesai<span class="ar"></span></th>
                 <th data-k="duration_min">Durasi<span class="ar"></span></th>
-                <th title="Rata-rata waktu per pcs · pcs selesai/total">Per pcs</th>
+                <th title="Rata-rata waktu per pcs · pcs selesai/total">
+                  Per pcs
+                </th>
                 <th data-k="customer_name">Customer<span class="ar"></span></th>
                 <th data-k="machine_name">Mesin<span class="ar"></span></th>
                 <th data-k="status">Status<span class="ar"></span></th>
